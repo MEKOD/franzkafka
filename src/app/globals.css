@@ -285,3 +285,62 @@ input:focus, textarea:focus, select:focus {
   background: var(--ink);
   color: var(--paper);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   DOSSIER (PRINT / PDF EXPORT)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.dossier-root {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.dossier-sheet {
+  position: relative;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.12);
+}
+
+.dossier-holes {
+  position: absolute;
+  top: 64px;
+  left: 18px;
+  width: 36px;
+  height: calc(100% - 128px);
+  background:
+    radial-gradient(circle at 18px 0px, rgba(0,0,0,0.12) 0 10px, transparent 11px),
+    radial-gradient(circle at 18px 50%, rgba(0,0,0,0.12) 0 10px, transparent 11px),
+    radial-gradient(circle at 18px 100%, rgba(0,0,0,0.12) 0 10px, transparent 11px);
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.dossier-body {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.no-print {
+  /* Marker class for elements hidden in print */
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  body::before {
+    display: none !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .dossier-sheet {
+    box-shadow: none;
+    border: none;
+  }
+
+  @page {
+    size: A4;
+    margin: 18mm;
+  }
+}

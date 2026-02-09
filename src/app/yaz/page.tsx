@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Save, Send, ArrowLeft } from 'lucide-react'
+import { Save, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui'
 import { TipTapEditor } from '@/components/editor'
 import { AuthModal, useAuth } from '@/components/auth'
 import type { LocalDraft, Visibility } from '@/lib/types'
+import { stripHtml, countWords, readingTimeMinutesFromWords } from '@/lib/text'
 
 const DRAFT_KEY = 'franzkafka_draft'
 
@@ -33,7 +34,6 @@ export default function WritePage() {
     const [content, setContent] = useState('')
     const [showAuthModal, setShowAuthModal] = useState(false)
     const [saving, setSaving] = useState(false)
-    const [pendingAction, setPendingAction] = useState<'save' | 'publish' | null>(null)
     const [publishVisibility, setPublishVisibility] = useState<Visibility>('private')
 
     // Load draft from localStorage on mount
@@ -64,9 +64,12 @@ export default function WritePage() {
         }
     }, [title, content])
 
-    const savePost = useCallback(async (publish: boolean) => {
+    const plain = stripHtml(content)
+    const words = countWords(plain)
+    const minutes = readingTimeMinutesFromWords(words)
+
+    const savePost = useCallback(async () => {
         if (!user) {
-            setPendingAction(publish ? 'publish' : 'save')
             setShowAuthModal(true)
             return
         }
@@ -103,9 +106,9 @@ export default function WritePage() {
                 title: title || 'Untitled',
                 content,
                 slug: generateSlug(title || 'baslıksız') + '-' + Date.now(),
-                // Draft her zaman private. Publish aninda private/open seciliyor.
-                visibility: publish ? publishVisibility : 'private',
-                is_published: publish,
+                visibility: publishVisibility,
+                // Bu urunde "draft" kavrami yok: kayit = published.
+                is_published: true,
             })
 
         if (error) {
@@ -118,12 +121,22 @@ export default function WritePage() {
         router.push('/dashboard')
     }, [user, title, content, publishVisibility, router])
 
+    useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            // Cmd+S / Ctrl+S
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+                e.preventDefault()
+                if (!saving) savePost()
+            }
+        }
+        window.addEventListener('keydown', onKeyDown)
+        return () => window.removeEventListener('keydown', onKeyDown)
+    }, [savePost, saving])
+
     const handleAuthSuccess = useCallback(() => {
         setShowAuthModal(false)
-        if (pendingAction) {
-            savePost(pendingAction === 'publish')
-        }
-    }, [pendingAction, savePost])
+        savePost()
+    }, [savePost])
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -138,10 +151,6 @@ export default function WritePage() {
                 </Link>
 
                 <div className="flex items-center gap-2">
-                    <Button onClick={() => savePost(false)} disabled={saving}>
-                        <Save size={14} />
-                        {saving ? 'Saving... / Kaydediliyor' : 'Save Draft / Taslak'}
-                    </Button>
                     <select
                         value={publishVisibility}
                         onChange={(e) => setPublishVisibility(e.target.value as Visibility)}
@@ -152,9 +161,9 @@ export default function WritePage() {
                         <option value="private">Private</option>
                         <option value="public">Open</option>
                     </select>
-                    <Button onClick={() => savePost(true)} variant="primary" disabled={saving}>
-                        <Send size={14} />
-                        Publish / Yayinla
+                    <Button onClick={savePost} variant="primary" disabled={saving}>
+                        <Save size={14} />
+                        {saving ? 'Saving... / Kaydediliyor' : 'Save'}
                     </Button>
                 </div>
             </header>
@@ -190,8 +199,8 @@ export default function WritePage() {
 
             {/* Footer */}
             <footer className="border-t border-ink px-6 py-3 text-xs text-ink-light flex justify-between">
-                <span>Autosaving... / Otomatik kayit</span>
-                <span>Daktilo — FranzKafka.xyz</span>
+                <span>Local draft autosave</span>
+                <span>{words} words · {minutes} min</span>
             </footer>
 
             {/* Auth Modal */}

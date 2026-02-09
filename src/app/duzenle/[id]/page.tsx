@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Save, Send, Trash2, EyeOff } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, Printer } from 'lucide-react'
 import Link from 'next/link'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui'
 import { TipTapEditor } from '@/components/editor'
 import { ProtectedRoute, useAuth } from '@/components/auth'
 import type { Post, Visibility } from '@/lib/types'
+import { stripHtml, countWords, readingTimeMinutesFromWords } from '@/lib/text'
 
 function generateSlug(title: string): string {
     return title
@@ -36,6 +37,10 @@ function EditContent() {
     const [visibility, setVisibility] = useState<Visibility>('private')
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+
+    const plain = stripHtml(content)
+    const words = countWords(plain)
+    const minutes = readingTimeMinutesFromWords(words)
 
     useEffect(() => {
         async function fetchPost() {
@@ -69,7 +74,7 @@ function EditContent() {
         }
     }, [postId, router, user])
 
-    const handleSave = useCallback(async (publish: boolean = false) => {
+    const handleSave = useCallback(async () => {
         if (!post) return
 
         setSaving(true)
@@ -78,10 +83,8 @@ function EditContent() {
             content,
             slug: generateSlug(title || 'baslıksız') + '-' + post.id,
             visibility,
-        }
-
-        if (publish) {
-            updates.is_published = true
+            // Bu urunde "draft/unpublish" yok: kayit = published.
+            is_published: true,
         }
 
         const { error } = await supabaseBrowser
@@ -91,28 +94,9 @@ function EditContent() {
 
         if (error) {
             console.error('Error saving post:', error)
-        } else if (publish) {
-            router.push('/dashboard')
         }
         setSaving(false)
-    }, [post, title, content, visibility, router])
-
-    const handleUnpublish = useCallback(async () => {
-        if (!post) return
-        setSaving(true)
-        const { error } = await supabaseBrowser
-            .from('posts')
-            .update({ is_published: false, visibility: 'private' })
-            .eq('id', post.id)
-
-        if (error) {
-            console.error('Error unpublishing post:', error)
-        } else {
-            setPost({ ...post, is_published: false, visibility: 'private' })
-            setVisibility('private')
-        }
-        setSaving(false)
-    }, [post])
+    }, [post, title, content, visibility])
 
     const handleDelete = async () => {
         if (!post) return
@@ -159,22 +143,18 @@ function EditContent() {
                         <option value="private">Private</option>
                         <option value="public">Open</option>
                     </select>
-                    <Button onClick={() => handleSave(false)} disabled={saving}>
+                    {post ? (
+                        <Link href={`/dossier/${post.id}?print=1`} target="_blank">
+                            <Button disabled={saving}>
+                                <Printer size={14} />
+                                Dossier PDF
+                            </Button>
+                        </Link>
+                    ) : null}
+                    <Button onClick={handleSave} variant="primary" disabled={saving}>
                         <Save size={14} />
-                        {saving ? 'Saving... / Kaydediliyor' : 'Save / Kaydet'}
+                        {saving ? 'Saving... / Kaydediliyor' : 'Save'}
                     </Button>
-                    {!post?.is_published && (
-                        <Button onClick={() => handleSave(true)} variant="primary" disabled={saving}>
-                            <Send size={14} />
-                            Publish / Yayinla
-                        </Button>
-                    )}
-                    {post?.is_published && (
-                        <Button onClick={handleUnpublish} disabled={saving}>
-                            <EyeOff size={14} />
-                            Unpublish
-                        </Button>
-                    )}
                     <button
                         onClick={handleDelete}
                         className="p-2 text-stamp-red hover:bg-stamp-red/10 border border-stamp-red"
@@ -216,9 +196,9 @@ function EditContent() {
             {/* Footer */}
             <footer className="border-t border-ink px-6 py-3 text-xs text-ink-light flex justify-between">
                 <span>
-                    {post?.is_published ? `Published (${visibility === 'public' ? 'Open' : 'Private'})` : 'Draft / Taslak'}
+                    {`Published (${visibility === 'public' ? 'Open' : 'Private'})`}
                 </span>
-                <span>Daktilo — FranzKafka.xyz</span>
+                <span>{words} words · {minutes} min</span>
             </footer>
         </div>
     )
