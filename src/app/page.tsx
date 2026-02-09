@@ -38,8 +38,19 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-ink px-6 py-4 text-xs text-ink-light text-center">
-        <p>FranzKafka.xyz — Ledger</p>
+      <footer className="border-t border-ink px-6 py-4 text-xs text-ink-light">
+        <div className="flex items-center justify-between w-full">
+          <span>FranzKafka.xyz — Ledger</span>
+          <nav className="flex items-center gap-3 shrink-0">
+            <Link href="/about" className="hover:underline">
+              About
+            </Link>
+            <span aria-hidden="true">·</span>
+            <Link href="/contact" className="hover:underline">
+              Contact
+            </Link>
+          </nav>
+        </div>
       </footer>
     </div>
   )
