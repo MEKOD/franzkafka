@@ -1,26 +1,287 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════════
+   KAYIT DEFTERİ — BRUTALIST DESIGN SYSTEM
+   A bureaucratic archive. No curves. No animations. No mercy.
+   ═══════════════════════════════════════════════════════════════════ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Paper & Ink */
+  --paper: #F0F0E6;
+  --paper-dark: #E5E5DB;
+  --ink: #18181B;
+  --ink-light: #3F3F46;
+  
+  /* Stamps */
+  --stamp-red: #A31D1D;
+  --stamp-green: #2D5A27;
+  
+  /* Functional */
+  --border: #18181B;
+  --border-light: #A1A1AA;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--paper);
+  --color-paper-dark: var(--paper-dark);
+  --color-ink: var(--ink);
+  --color-ink-light: var(--ink-light);
+  --color-stamp-red: var(--stamp-red);
+  --color-stamp-green: var(--stamp-green);
+  --color-border: var(--border);
+  --color-border-light: var(--border-light);
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ═══════════════════════════════════════════════════════════════════
+   BASE STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+html {
+  scroll-behavior: auto; /* No smooth scrolling */
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  position: relative;
+}
+
+/* Paper Noise Texture Overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.03;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TYPOGRAPHY
+   ═══════════════════════════════════════════════════════════════════ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+h1 { font-size: 1.75rem; }
+h2 { font-size: 1.25rem; }
+h3 { font-size: 1rem; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   FORM ELEMENTS — Sharp Edges Only
+   ═══════════════════════════════════════════════════════════════════ */
+
+input, textarea, select, button {
+  border-radius: 0 !important;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: 2px solid var(--ink);
+  outline-offset: 0;
+}
+
+/* Hide default focus ring */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   STAMP EFFECTS
+   ═══════════════════════════════════════════════════════════════════ */
+
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border: 2px solid currentColor;
+  transform: rotate(-2deg);
+  position: relative;
+}
+
+.stamp::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: currentColor;
+  opacity: 0.05;
+}
+
+.stamp-approved {
+  color: var(--stamp-green);
+}
+
+.stamp-rejected {
+  color: var(--stamp-red);
+}
+
+.stamp-draft {
+  color: var(--ink-light);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BUTTONS — Bureaucratic Style
+   ═══════════════════════════════════════════════════════════════════ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.btn-primary:hover {
+  background: transparent;
+  color: var(--ink);
+}
+
+.btn-danger {
+  border-color: var(--stamp-red);
+  color: var(--stamp-red);
+}
+
+.btn-danger:hover {
+  background: var(--stamp-red);
+  color: var(--paper);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LOGBOOK TABLE STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.logbook-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 80px 100px 100px;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.logbook-row:hover {
+  background: var(--paper-dark);
+}
+
+.logbook-header {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.6875rem;
+  color: var(--ink-light);
+  border-bottom: 2px solid var(--ink);
+  cursor: default;
+}
+
+.logbook-header:hover {
+  background: transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   EDITOR — DAKTILO (Typewriter)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.editor-area {
+  min-height: 60vh;
+  padding: 2rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.editor-area:focus {
+  outline: none;
+}
+
+/* TipTap Placeholder */
+.editor-area .is-empty::before {
+  content: attr(data-placeholder);
+  color: var(--ink-light);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   UTILITIES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.border-ink { border-color: var(--ink); }
+.bg-paper { background-color: var(--paper); }
+.text-ink { color: var(--ink); }
+.text-ink-light { color: var(--ink-light); }
+
+/* Remove all animations */
+*, *::before, *::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--paper-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ink-light);
+  border: 1px solid var(--paper);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink);
+}
+
+/* Selection */
+::selection {
+  background: var(--ink);
+  color: var(--paper);
 }
