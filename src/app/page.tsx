@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { PenLine, BookOpen } from 'lucide-react'
+import { PenLine, NotebookPen } from 'lucide-react'
 import { SiteHeader } from '@/components/nav/SiteHeader'
 
 export default function HomePage() {
@@ -27,11 +27,11 @@ export default function HomePage() {
               Write (Yaz)
             </Link>
             <Link
-              href="/read"
+              href="/dashboard"
               className="btn text-base py-3 px-6"
             >
-              <BookOpen size={16} />
-              Read (Oku)
+              <NotebookPen size={16} />
+              My posts (Yazilarim)
             </Link>
           </div>
         </div>

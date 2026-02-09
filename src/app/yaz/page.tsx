@@ -8,7 +8,7 @@ import { supabaseBrowser } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui'
 import { TipTapEditor } from '@/components/editor'
 import { AuthModal, useAuth } from '@/components/auth'
-import type { LocalDraft } from '@/lib/types'
+import type { LocalDraft, Visibility } from '@/lib/types'
 
 const DRAFT_KEY = 'franzkafka_draft'
 
@@ -34,6 +34,7 @@ export default function WritePage() {
     const [showAuthModal, setShowAuthModal] = useState(false)
     const [saving, setSaving] = useState(false)
     const [pendingAction, setPendingAction] = useState<'save' | 'publish' | null>(null)
+    const [publishVisibility, setPublishVisibility] = useState<Visibility>('private')
 
     // Load draft from localStorage on mount
     useEffect(() => {
@@ -102,7 +103,8 @@ export default function WritePage() {
                 title: title || 'Untitled',
                 content,
                 slug: generateSlug(title || 'baslıksız') + '-' + Date.now(),
-                visibility: publish ? 'public' : 'private',
+                // Draft her zaman private. Publish aninda private/open seciliyor.
+                visibility: publish ? publishVisibility : 'private',
                 is_published: publish,
             })
 
@@ -114,7 +116,7 @@ export default function WritePage() {
 
         localStorage.removeItem(DRAFT_KEY)
         router.push('/dashboard')
-    }, [user, title, content, router])
+    }, [user, title, content, publishVisibility, router])
 
     const handleAuthSuccess = useCallback(() => {
         setShowAuthModal(false)
@@ -140,6 +142,16 @@ export default function WritePage() {
                         <Save size={14} />
                         {saving ? 'Saving... / Kaydediliyor' : 'Save Draft / Taslak'}
                     </Button>
+                    <select
+                        value={publishVisibility}
+                        onChange={(e) => setPublishVisibility(e.target.value as Visibility)}
+                        className="px-3 py-2 bg-transparent border border-ink text-sm"
+                        aria-label="Publish visibility"
+                        disabled={saving}
+                    >
+                        <option value="private">Private</option>
+                        <option value="public">Open</option>
+                    </select>
                     <Button onClick={() => savePost(true)} variant="primary" disabled={saving}>
                         <Send size={14} />
                         Publish / Yayinla

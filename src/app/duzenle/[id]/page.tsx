@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Save, Send, Trash2 } from 'lucide-react'
+import { ArrowLeft, Save, Send, Trash2, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui'
 import { TipTapEditor } from '@/components/editor'
 import { ProtectedRoute, useAuth } from '@/components/auth'
-import type { Post } from '@/lib/types'
+import type { Post, Visibility } from '@/lib/types'
 
 function generateSlug(title: string): string {
     return title
@@ -33,6 +33,7 @@ function EditContent() {
     const [post, setPost] = useState<Post | null>(null)
     const [title, setTitle] = useState('')
     const [content, setContent] = useState('')
+    const [visibility, setVisibility] = useState<Visibility>('private')
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
 
@@ -46,19 +47,20 @@ function EditContent() {
 
             if (error || !data) {
                 console.error('Error fetching post:', error)
-                router.push('/yazlarim')
+                router.push('/dashboard')
                 return
             }
 
             // Check ownership
             if (data.author_id !== user?.id) {
-                router.push('/yazlarim')
+                router.push('/dashboard')
                 return
             }
 
             setPost(data)
             setTitle(data.title || '')
             setContent(data.content || '')
+            setVisibility((data.visibility || 'private') as Visibility)
             setLoading(false)
         }
 
@@ -75,11 +77,11 @@ function EditContent() {
             title: title || 'Başlıksız',
             content,
             slug: generateSlug(title || 'baslıksız') + '-' + post.id,
+            visibility,
         }
 
         if (publish) {
             updates.is_published = true
-            updates.visibility = 'public'
         }
 
         const { error } = await supabaseBrowser
@@ -90,10 +92,27 @@ function EditContent() {
         if (error) {
             console.error('Error saving post:', error)
         } else if (publish) {
-            router.push('/yazlarim')
+            router.push('/dashboard')
         }
         setSaving(false)
-    }, [post, title, content, router])
+    }, [post, title, content, visibility, router])
+
+    const handleUnpublish = useCallback(async () => {
+        if (!post) return
+        setSaving(true)
+        const { error } = await supabaseBrowser
+            .from('posts')
+            .update({ is_published: false, visibility: 'private' })
+            .eq('id', post.id)
+
+        if (error) {
+            console.error('Error unpublishing post:', error)
+        } else {
+            setPost({ ...post, is_published: false, visibility: 'private' })
+            setVisibility('private')
+        }
+        setSaving(false)
+    }, [post])
 
     const handleDelete = async () => {
         if (!post) return
@@ -105,7 +124,7 @@ function EditContent() {
             .eq('id', post.id)
 
         if (!error) {
-            router.push('/yazlarim')
+            router.push('/dashboard')
         }
     }
 
@@ -122,7 +141,7 @@ function EditContent() {
             {/* Header */}
             <header className="border-b border-ink px-6 py-4 flex items-center justify-between">
                 <Link
-                    href="/yazlarim"
+                    href="/dashboard"
                     className="flex items-center gap-2 text-sm hover:underline"
                 >
                     <ArrowLeft size={14} />
@@ -130,6 +149,16 @@ function EditContent() {
                 </Link>
 
                 <div className="flex items-center gap-2">
+                    <select
+                        value={visibility}
+                        onChange={(e) => setVisibility(e.target.value as Visibility)}
+                        className="px-3 py-2 bg-transparent border border-ink text-sm"
+                        aria-label="Post visibility"
+                        disabled={saving}
+                    >
+                        <option value="private">Private</option>
+                        <option value="public">Open</option>
+                    </select>
                     <Button onClick={() => handleSave(false)} disabled={saving}>
                         <Save size={14} />
                         {saving ? 'Saving... / Kaydediliyor' : 'Save / Kaydet'}
@@ -138,6 +167,12 @@ function EditContent() {
                         <Button onClick={() => handleSave(true)} variant="primary" disabled={saving}>
                             <Send size={14} />
                             Publish / Yayinla
+                        </Button>
+                    )}
+                    {post?.is_published && (
+                        <Button onClick={handleUnpublish} disabled={saving}>
+                            <EyeOff size={14} />
+                            Unpublish
                         </Button>
                     )}
                     <button
@@ -181,7 +216,7 @@ function EditContent() {
             {/* Footer */}
             <footer className="border-t border-ink px-6 py-3 text-xs text-ink-light flex justify-between">
                 <span>
-                    {post?.is_published ? 'Published / Yayinda' : 'Draft / Taslak'}
+                    {post?.is_published ? `Published (${visibility === 'public' ? 'Open' : 'Private'})` : 'Draft / Taslak'}
                 </span>
                 <span>Daktilo — FranzKafka.xyz</span>
             </footer>

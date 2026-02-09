@@ -34,6 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         .eq('author_id', profile.id)
         .eq('slug', slug)
         .eq('is_published', true)
+        .eq('visibility', 'public')
         .single()
 
     if (!post) {
@@ -79,6 +80,7 @@ export default async function PostPage({ params }: PageProps) {
         .eq('author_id', profile.id)
         .eq('slug', slug)
         .eq('is_published', true)
+        .eq('visibility', 'public')
         .single()
 
     if (!post) {

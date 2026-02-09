@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, LogOut, Eye, EyeOff, Trash2, Link2, User as UserIcon } from 'lucide-react'
+import { Plus, LogOut, Eye, EyeOff, Trash2, Link2, User as UserIcon, ExternalLink } from 'lucide-react'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui'
 import { ProtectedRoute, useAuth } from '@/components/auth'
@@ -17,6 +17,11 @@ interface Post {
     visibility: string
     inserted_at: string
     is_published: boolean
+}
+
+function statusLabel(p: Post) {
+    if (!p.is_published) return 'Draft'
+    return p.visibility === 'public' ? 'Published (Open)' : 'Published (Private)'
 }
 
 function DashboardContent() {
@@ -182,7 +187,7 @@ function DashboardContent() {
                                                 {post.is_published ? (
                                                     <>
                                                         <Eye size={12} />
-                                                        Published
+                                                        {post.visibility === 'public' ? 'Open' : 'Private'}
                                                     </>
                                                 ) : (
                                                     <>
@@ -191,10 +196,21 @@ function DashboardContent() {
                                                     </>
                                                 )}
                                             </span>
+                                            <span className="px-2 py-0.5 border border-ink">{statusLabel(post)}</span>
                                         </div>
                                     </div>
 
                                     <div className="flex items-center gap-2">
+                                        {post.is_published && post.visibility === 'public' && profile?.username && (
+                                            <Link
+                                                href={`/${profile.username}/${post.slug}`}
+                                                className="p-2 hover:bg-paper-dark border border-ink"
+                                                title="Open public link"
+                                                target="_blank"
+                                            >
+                                                <ExternalLink size={16} />
+                                            </Link>
+                                        )}
                                         <button
                                             onClick={() => handleShare(post)}
                                             className="p-2 hover:bg-paper-dark border border-ink"
