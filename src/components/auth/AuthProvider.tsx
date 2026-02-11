@@ -6,8 +6,10 @@ import { getSupabaseBrowserClient } from '@/lib/supabase-browser'
 import type { SupabaseConnectionConfig } from '@/lib/supabase-config'
 import {
     clearSupabaseConfig,
+    disableCustomSupabaseConfig,
     getSupabaseConfigClientSnapshot,
     getSupabaseConfigServerSnapshot,
+    hasDefaultSupabaseConfig,
     saveSupabaseConfig,
     subscribeSupabaseConfig,
 } from '@/lib/supabase-config'
@@ -19,12 +21,15 @@ interface AuthContextType {
     session: Session | null
     profile: Profile | null
     connection: SupabaseConnectionConfig | null
+    connectionSource: 'none' | 'env' | 'custom'
     hasConnection: boolean
+    hasDefaultConnection: boolean
     loading: boolean
     signIn: (email: string, password: string) => Promise<{ error: Error | null }>
     signUp: (email: string, password: string) => Promise<{ error: Error | null }>
     signOut: () => Promise<void>
     connectSupabase: (url: string, anonKey: string) => Promise<{ error: Error | null }>
+    switchToDefaultSupabase: () => Promise<void>
     disconnectSupabase: () => Promise<void>
     refreshProfile: () => Promise<void>
 }
@@ -40,10 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         getSupabaseConfigClientSnapshot,
         getSupabaseConfigServerSnapshot
     )
-    const [loading, setLoading] = useState<boolean>(() => !!getSupabaseConfigClientSnapshot())
+    const [loading, setLoading] = useState<boolean>(() => !!getSupabaseConfigClientSnapshot().config)
+    const activeConnectionConfig = connection.config
 
     useEffect(() => {
-        if (!connection) return
+        if (!activeConnectionConfig) return
 
         const supabase = getSupabaseBrowserClient()
 
@@ -62,13 +68,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         )
 
         return () => subscription.unsubscribe()
-    }, [connection])
+    }, [activeConnectionConfig])
 
     useEffect(() => {
         let cancelled = false
 
         async function sync() {
-            if (!user || !connection) {
+            if (!user || !activeConnectionConfig) {
                 setProfile(null)
                 return
             }
@@ -81,24 +87,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => {
             cancelled = true
         }
-    }, [user, connection])
+    }, [user, activeConnectionConfig])
 
     const signIn = async (email: string, password: string) => {
-        if (!connection) return { error: new Error('No Supabase connection configured') }
+        if (!connection.config) return { error: new Error('No Supabase connection configured') }
         const supabase = getSupabaseBrowserClient()
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         return { error: error as Error | null }
     }
 
     const signUp = async (email: string, password: string) => {
-        if (!connection) return { error: new Error('No Supabase connection configured') }
+        if (!connection.config) return { error: new Error('No Supabase connection configured') }
         const supabase = getSupabaseBrowserClient()
         const { error } = await supabase.auth.signUp({ email, password })
         return { error: error as Error | null }
     }
 
     const signOut = async () => {
-        if (!connection) return
+        if (!connection.config) return
         const supabase = getSupabaseBrowserClient()
         await supabase.auth.signOut()
     }
@@ -117,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const disconnectSupabase = async () => {
-        if (connection) {
+        if (connection.config) {
             try {
                 await getSupabaseBrowserClient().auth.signOut()
             } catch {
@@ -129,6 +135,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null)
         setProfile(null)
         setLoading(false)
+    }
+
+    const switchToDefaultSupabase = async () => {
+        if (!hasDefaultSupabaseConfig()) return
+        if (activeConnectionConfig) {
+            try {
+                await getSupabaseBrowserClient().auth.signOut()
+            } catch {
+                // Ignore sign-out errors while switching.
+            }
+        }
+        disableCustomSupabaseConfig()
+        setSession(null)
+        setUser(null)
+        setProfile(null)
+        setLoading(true)
     }
 
     const refreshProfile = async () => {
@@ -143,13 +165,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 user,
                 session,
                 profile,
-                connection,
-                hasConnection: !!connection,
+                connection: connection.config,
+                connectionSource: connection.source,
+                hasConnection: !!connection.config,
+                hasDefaultConnection: hasDefaultSupabaseConfig(),
                 loading,
                 signIn,
                 signUp,
                 signOut,
                 connectSupabase,
+                switchToDefaultSupabase,
                 disconnectSupabase,
                 refreshProfile,
             }}

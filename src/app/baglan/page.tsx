@@ -10,7 +10,15 @@ import { REQUIRED_SQL } from '@/lib/required-sql'
 
 export default function ConnectSupabasePage() {
   const router = useRouter()
-  const { hasConnection, connection, connectSupabase, disconnectSupabase } = useAuth()
+  const {
+    hasConnection,
+    hasDefaultConnection,
+    connectionSource,
+    connection,
+    connectSupabase,
+    switchToDefaultSupabase,
+    disconnectSupabase,
+  } = useAuth()
 
   const [url, setUrl] = useState(() => connection?.url || '')
   const [anonKey, setAnonKey] = useState(() => connection?.anonKey || '')
@@ -100,9 +108,24 @@ export default function ConnectSupabasePage() {
               Protocol: Bring Your Own Database (BYOD)
             </p>
             <p className="text-xs text-ink-light mt-2">
-              Connect URL + anon key, run SQL, then continue to auth.
+              Default mode uses deployed env project. Custom mode is optional for bring-your-own Supabase.
             </p>
           </div>
+
+          {hasDefaultConnection && (
+            <div className="mb-5 p-3 border border-ink text-xs bg-paper-dark">
+              Active source: <span className="font-semibold uppercase">{connectionSource}</span>
+              <div className="mt-2 flex gap-2">
+                <Button
+                  type="button"
+                  disabled={connectionSource === 'env'}
+                  onClick={() => { switchToDefaultSupabase() }}
+                >
+                  Use Default Project
+                </Button>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSave} className="space-y-6">
             <div className="space-y-4">
@@ -179,7 +202,7 @@ export default function ConnectSupabasePage() {
               </Button>
             </div>
 
-            {hasConnection && (
+            {hasConnection && connectionSource === 'custom' && (
               <div className="text-center pt-4">
                 <button
                   type="button"

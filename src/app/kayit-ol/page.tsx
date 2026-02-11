@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/components/auth'
 import { Button, Input } from '@/components/ui'
+import { formatAuthError } from '@/lib/auth-error'
 
 export default function RegisterPage() {
     const [email, setEmail] = useState('')
@@ -39,7 +40,7 @@ export default function RegisterPage() {
         const { error } = await signUp(email, password)
 
         if (error) {
-            setError('Sign-up failed. Email may already be in use. / Kayit basarisiz.')
+            setError(formatAuthError(error, 'Sign-up failed. Email may already be in use. / Kayit basarisiz.'))
             setLoading(false)
         } else {
             setSuccess(true)

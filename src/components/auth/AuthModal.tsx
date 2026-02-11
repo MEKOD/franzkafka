@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { X } from 'lucide-react'
 import { useAuth } from './AuthProvider'
 import { Button, Input } from '@/components/ui'
+import { formatAuthError } from '@/lib/auth-error'
 
 interface AuthModalProps {
     isOpen: boolean
@@ -32,7 +33,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode: initialMode = 'log
             if (mode === 'login') {
                 const { error } = await signIn(email, password)
                 if (error) {
-                    setError('Giriş başarısız. E-posta veya şifre hatalı.')
+                    setError(formatAuthError(error, 'Giriş başarısız. E-posta veya şifre hatalı.'))
                     setLoading(false)
                     return
                 }
@@ -44,7 +45,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode: initialMode = 'log
                 }
                 const { error } = await signUp(email, password)
                 if (error) {
-                    setError('Kayıt başarısız. Bu e-posta zaten kullanılıyor olabilir.')
+                    setError(formatAuthError(error, 'Kayıt başarısız. Bu e-posta zaten kullanılıyor olabilir.'))
                     setLoading(false)
                     return
                 }

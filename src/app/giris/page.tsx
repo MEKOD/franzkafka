@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/components/auth'
 import { Button, Input } from '@/components/ui'
+import { formatAuthError } from '@/lib/auth-error'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -26,7 +27,7 @@ export default function LoginPage() {
         const { error } = await signIn(email, password)
 
         if (error) {
-            setError('Sign-in failed. Check email/password. / Giris basarisiz.')
+            setError(formatAuthError(error, 'Sign-in failed. Check email/password. / Giris basarisiz.'))
             setLoading(false)
         } else {
             router.push('/dashboard')
