@@ -16,7 +16,7 @@ export default function HomePage() {
               alt="Kafka"
               width={128}
               height={128}
-              className="w-32 h-32 object-cover mix-blend-multiply grayscale contrast-125 border border-ink"
+              className="w-32 h-32 object-cover mix-blend-multiply grayscale contrast-125 brightness-95 opacity-90 border border-ink bg-transparent"
             />
             <p className="text-xl sm:text-2xl leading-tight max-w-xl">
               &quot;I am free. That is why I am lost.&quot;
