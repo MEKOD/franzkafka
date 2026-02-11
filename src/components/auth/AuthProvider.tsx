@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode, useSyncExternalStore } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { getSupabaseBrowserClient } from '@/lib/supabase-browser'
 import type { SupabaseConnectionConfig } from '@/lib/supabase-config'
@@ -8,7 +8,6 @@ import {
     clearSupabaseConfig,
     disableCustomSupabaseConfig,
     getSupabaseConfigClientSnapshot,
-    getSupabaseConfigServerSnapshot,
     hasDefaultSupabaseConfig,
     saveSupabaseConfig,
     subscribeSupabaseConfig,
@@ -40,13 +39,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [session, setSession] = useState<Session | null>(null)
     const [profile, setProfile] = useState<Profile | null>(null)
-    const connection = useSyncExternalStore(
-        subscribeSupabaseConfig,
-        getSupabaseConfigClientSnapshot,
-        getSupabaseConfigServerSnapshot
-    )
+    const [connectionState, setConnectionState] = useState(() => getSupabaseConfigClientSnapshot())
     const [loading, setLoading] = useState<boolean>(() => !!getSupabaseConfigClientSnapshot().config)
-    const activeConnectionConfig = connection.config
+    const activeConnectionConfig = connectionState.config
+
+    useEffect(() => {
+        return subscribeSupabaseConfig(() => {
+            setConnectionState(getSupabaseConfigClientSnapshot())
+        })
+    }, [])
 
     useEffect(() => {
         if (!activeConnectionConfig) return
@@ -90,21 +91,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [user, activeConnectionConfig])
 
     const signIn = async (email: string, password: string) => {
-        if (!connection.config) return { error: new Error('No Supabase connection configured') }
+        if (!activeConnectionConfig) return { error: new Error('No Supabase connection configured') }
         const supabase = getSupabaseBrowserClient()
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         return { error: error as Error | null }
     }
 
     const signUp = async (email: string, password: string) => {
-        if (!connection.config) return { error: new Error('No Supabase connection configured') }
+        if (!activeConnectionConfig) return { error: new Error('No Supabase connection configured') }
         const supabase = getSupabaseBrowserClient()
         const { error } = await supabase.auth.signUp({ email, password })
         return { error: error as Error | null }
     }
 
     const signOut = async () => {
-        if (!connection.config) return
+        if (!activeConnectionConfig) return
         const supabase = getSupabaseBrowserClient()
         await supabase.auth.signOut()
     }
@@ -123,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const disconnectSupabase = async () => {
-        if (connection.config) {
+        if (activeConnectionConfig) {
             try {
                 await getSupabaseBrowserClient().auth.signOut()
             } catch {
@@ -165,9 +166,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 user,
                 session,
                 profile,
-                connection: connection.config,
-                connectionSource: connection.source,
-                hasConnection: !!connection.config,
+                connection: connectionState.config,
+                connectionSource: connectionState.source,
+                hasConnection: !!connectionState.config,
                 hasDefaultConnection: hasDefaultSupabaseConfig(),
                 loading,
                 signIn,
