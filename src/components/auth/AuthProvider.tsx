@@ -1,10 +1,16 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useSyncExternalStore } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { getSupabaseBrowserClient } from '@/lib/supabase-browser'
 import type { SupabaseConnectionConfig } from '@/lib/supabase-config'
-import { clearSupabaseConfig, resolveSupabaseConfig, saveSupabaseConfig } from '@/lib/supabase-config'
+import {
+    clearSupabaseConfig,
+    getSupabaseConfigClientSnapshot,
+    getSupabaseConfigServerSnapshot,
+    saveSupabaseConfig,
+    subscribeSupabaseConfig,
+} from '@/lib/supabase-config'
 import type { Profile } from '@/lib/types'
 import { ensureProfile } from '@/lib/ensureProfile'
 
@@ -29,8 +35,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [session, setSession] = useState<Session | null>(null)
     const [profile, setProfile] = useState<Profile | null>(null)
-    const [connection, setConnection] = useState<SupabaseConnectionConfig | null>(() => resolveSupabaseConfig())
-    const [loading, setLoading] = useState<boolean>(() => !!resolveSupabaseConfig())
+    const connection = useSyncExternalStore(
+        subscribeSupabaseConfig,
+        getSupabaseConfigClientSnapshot,
+        getSupabaseConfigServerSnapshot
+    )
+    const [loading, setLoading] = useState<boolean>(() => !!getSupabaseConfigClientSnapshot())
 
     useEffect(() => {
         if (!connection) return
@@ -96,8 +106,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const connectSupabase = async (url: string, anonKey: string) => {
         try {
             saveSupabaseConfig({ url, anonKey })
+            setSession(null)
+            setUser(null)
+            setProfile(null)
             setLoading(true)
-            setConnection(resolveSupabaseConfig())
             return { error: null }
         } catch (error) {
             return { error: error as Error }
@@ -113,7 +125,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         }
         clearSupabaseConfig()
-        setConnection(resolveSupabaseConfig())
         setSession(null)
         setUser(null)
         setProfile(null)

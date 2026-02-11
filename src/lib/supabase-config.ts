@@ -4,6 +4,7 @@ export interface SupabaseConnectionConfig {
 }
 
 const STORAGE_KEY = 'ledger_supabase_config_v1'
+const CHANGE_EVENT = 'ledger_supabase_config_changed'
 
 function normalizeUrl(raw: string): string {
   return raw.trim().replace(/\/+$/, '')
@@ -49,14 +50,36 @@ export function saveSupabaseConfig(config: SupabaseConnectionConfig) {
   const parsed = parseConfig(config)
   if (!parsed) throw new Error('Invalid Supabase config')
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed))
+  window.dispatchEvent(new Event(CHANGE_EVENT))
 }
 
 export function clearSupabaseConfig() {
   if (typeof window === 'undefined') return
   window.localStorage.removeItem(STORAGE_KEY)
+  window.dispatchEvent(new Event(CHANGE_EVENT))
 }
 
 export function resolveSupabaseConfig(): SupabaseConnectionConfig | null {
   return getStoredSupabaseConfig() || getEnvSupabaseConfig()
 }
 
+export function subscribeSupabaseConfig(onChange: () => void): () => void {
+  if (typeof window === 'undefined') return () => {}
+
+  const handler = () => onChange()
+  window.addEventListener('storage', handler)
+  window.addEventListener(CHANGE_EVENT, handler)
+
+  return () => {
+    window.removeEventListener('storage', handler)
+    window.removeEventListener(CHANGE_EVENT, handler)
+  }
+}
+
+export function getSupabaseConfigClientSnapshot(): SupabaseConnectionConfig | null {
+  return resolveSupabaseConfig()
+}
+
+export function getSupabaseConfigServerSnapshot(): SupabaseConnectionConfig | null {
+  return getEnvSupabaseConfig()
+}
