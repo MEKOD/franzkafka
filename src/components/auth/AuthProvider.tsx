@@ -2,7 +2,9 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { User, Session } from '@supabase/supabase-js'
-import { supabaseBrowser } from '@/lib/supabase-browser'
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser'
+import type { SupabaseConnectionConfig } from '@/lib/supabase-config'
+import { clearSupabaseConfig, resolveSupabaseConfig, saveSupabaseConfig } from '@/lib/supabase-config'
 import type { Profile } from '@/lib/types'
 import { ensureProfile } from '@/lib/ensureProfile'
 
@@ -10,10 +12,14 @@ interface AuthContextType {
     user: User | null
     session: Session | null
     profile: Profile | null
+    connection: SupabaseConnectionConfig | null
+    hasConnection: boolean
     loading: boolean
     signIn: (email: string, password: string) => Promise<{ error: Error | null }>
     signUp: (email: string, password: string) => Promise<{ error: Error | null }>
     signOut: () => Promise<void>
+    connectSupabase: (url: string, anonKey: string) => Promise<{ error: Error | null }>
+    disconnectSupabase: () => Promise<void>
     refreshProfile: () => Promise<void>
 }
 
@@ -23,39 +29,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [session, setSession] = useState<Session | null>(null)
     const [profile, setProfile] = useState<Profile | null>(null)
-    const [loading, setLoading] = useState(true)
-    const supabase = supabaseBrowser
+    const [connection, setConnection] = useState<SupabaseConnectionConfig | null>(() => resolveSupabaseConfig())
+    const [loading, setLoading] = useState<boolean>(() => !!resolveSupabaseConfig())
 
     useEffect(() => {
-        // Get initial session
+        if (!connection) return
+
+        const supabase = getSupabaseBrowserClient()
+
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session)
             setUser(session?.user ?? null)
             setLoading(false)
         })
 
-        // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            (_event, session) => {
-                setSession(session)
-                setUser(session?.user ?? null)
+            (_event, nextSession) => {
+                setSession(nextSession)
+                setUser(nextSession?.user ?? null)
                 setLoading(false)
             }
         )
 
         return () => subscription.unsubscribe()
-    }, [supabase.auth])
+    }, [connection])
 
     useEffect(() => {
         let cancelled = false
 
         async function sync() {
-            if (!user) {
+            if (!user || !connection) {
                 setProfile(null)
                 return
             }
 
-            const p = await ensureProfile(user)
+            const p = await ensureProfile(user, getSupabaseBrowserClient())
             if (!cancelled) setProfile(p)
         }
 
@@ -63,30 +71,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => {
             cancelled = true
         }
-    }, [user])
+    }, [user, connection])
 
     const signIn = async (email: string, password: string) => {
+        if (!connection) return { error: new Error('No Supabase connection configured') }
+        const supabase = getSupabaseBrowserClient()
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         return { error: error as Error | null }
     }
 
     const signUp = async (email: string, password: string) => {
+        if (!connection) return { error: new Error('No Supabase connection configured') }
+        const supabase = getSupabaseBrowserClient()
         const { error } = await supabase.auth.signUp({ email, password })
         return { error: error as Error | null }
     }
 
     const signOut = async () => {
+        if (!connection) return
+        const supabase = getSupabaseBrowserClient()
         await supabase.auth.signOut()
+    }
+
+    const connectSupabase = async (url: string, anonKey: string) => {
+        try {
+            saveSupabaseConfig({ url, anonKey })
+            setLoading(true)
+            setConnection(resolveSupabaseConfig())
+            return { error: null }
+        } catch (error) {
+            return { error: error as Error }
+        }
+    }
+
+    const disconnectSupabase = async () => {
+        if (connection) {
+            try {
+                await getSupabaseBrowserClient().auth.signOut()
+            } catch {
+                // Ignore sign-out errors while disconnecting.
+            }
+        }
+        clearSupabaseConfig()
+        setConnection(resolveSupabaseConfig())
+        setSession(null)
+        setUser(null)
+        setProfile(null)
+        setLoading(false)
     }
 
     const refreshProfile = async () => {
         if (!user) return
-        const p = await ensureProfile(user)
+        const p = await ensureProfile(user, getSupabaseBrowserClient())
         setProfile(p)
     }
 
     return (
-        <AuthContext.Provider value={{ user, session, profile, loading, signIn, signUp, signOut, refreshProfile }}>
+        <AuthContext.Provider
+            value={{
+                user,
+                session,
+                profile,
+                connection,
+                hasConnection: !!connection,
+                loading,
+                signIn,
+                signUp,
+                signOut,
+                connectSupabase,
+                disconnectSupabase,
+                refreshProfile,
+            }}
+        >
             {children}
         </AuthContext.Provider>
     )

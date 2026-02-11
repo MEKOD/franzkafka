@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { supabaseBrowser } from '@/lib/supabase-browser'
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser'
 import { ProtectedRoute, useAuth } from '@/components/auth'
 import { Button } from '@/components/ui'
 import type { Post, Visibility } from '@/lib/types'
@@ -21,7 +21,8 @@ function DossierContent() {
 
   useEffect(() => {
     async function fetchPost() {
-      const { data, error } = await supabaseBrowser
+      const supabase = getSupabaseBrowserClient()
+      const { data, error } = await supabase
         .from('posts')
         .select('*')
         .eq('id', postId)
@@ -135,4 +136,3 @@ export default function DossierPage() {
     </ProtectedRoute>
   )
 }
-

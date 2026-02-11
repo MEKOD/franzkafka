@@ -8,7 +8,7 @@ import { Button } from '@/components/ui'
 
 export function SiteHeader() {
   const router = useRouter()
-  const { user, profile, loading, signOut } = useAuth()
+  const { user, profile, loading, hasConnection, signOut } = useAuth()
 
   const handleSignOut = async () => {
     await signOut()
@@ -17,6 +17,13 @@ export function SiteHeader() {
 
   const right = () => {
     if (loading) return null
+    if (!hasConnection) {
+      return (
+        <Link href="/baglan" className="text-sm hover:underline">
+          Connect Supabase
+        </Link>
+      )
+    }
     if (!user) {
       return (
         <Link href="/giris" className="text-sm hover:underline">
@@ -55,4 +62,3 @@ export function SiteHeader() {
     </header>
   )
 }
-

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { X } from 'lucide-react'
 import { useAuth } from './AuthProvider'
 import { Button, Input } from '@/components/ui'
@@ -18,7 +19,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode: initialMode = 'log
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
-    const { signIn, signUp } = useAuth()
+    const { signIn, signUp, hasConnection } = useAuth()
 
     if (!isOpen) return null
 
@@ -89,6 +90,17 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode: initialMode = 'log
                     </p>
                 </div>
 
+                {!hasConnection && (
+                    <div className="mb-4 p-3 border border-ink bg-paper-dark text-xs">
+                        Supabase baglantisi yok. Once bagla.
+                        <div className="mt-2">
+                            <Link href="/baglan" className="underline hover:no-underline">
+                                /baglan sayfasina git
+                            </Link>
+                        </div>
+                    </div>
+                )}
+
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <Input
@@ -119,7 +131,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode: initialMode = 'log
                         type="submit"
                         variant="primary"
                         className="w-full"
-                        disabled={loading}
+                        disabled={loading || !hasConnection}
                     >
                         {loading
                             ? (mode === 'login' ? 'Giriş yapılıyor...' : 'Kayıt yapılıyor...')

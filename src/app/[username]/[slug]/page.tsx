@@ -1,146 +1,132 @@
-import { notFound } from 'next/navigation'
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
-import type { Metadata } from 'next'
+import { useParams } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
+import { useAuth } from '@/components/auth'
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser'
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
-interface PageProps {
-    params: Promise<{ username: string; slug: string }>
+interface PublicProfile {
+  id: string
+  username: string | null
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-    const { username, slug } = await params
+interface PublicPost {
+  id: number
+  title: string
+  content: string
+  inserted_at: string
+}
 
-    // Get profile
-    const { data: profile } = await supabase
+export default function PostPage() {
+  const params = useParams<{ username: string; slug: string }>()
+  const { hasConnection } = useAuth()
+  const [profile, setProfile] = useState<PublicProfile | null>(null)
+  const [post, setPost] = useState<PublicPost | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const username = params.username
+  const slug = params.slug
+
+  useEffect(() => {
+    async function fetchData() {
+      if (!hasConnection) {
+        setLoading(false)
+        return
+      }
+
+      const supabase = getSupabaseBrowserClient()
+      const { data: profileData } = await supabase
         .from('profiles')
         .select('id, username')
         .eq('username', username)
-        .single()
+        .maybeSingle()
 
-    if (!profile) {
-        return { title: 'Yazı Bulunamadı' }
-    }
+      if (!profileData) {
+        setProfile(null)
+        setPost(null)
+        setLoading(false)
+        return
+      }
 
-    // Get post
-    const { data: post } = await supabase
+      const { data: postData } = await supabase
         .from('posts')
-        .select('title, content')
-        .eq('author_id', profile.id)
+        .select('id, title, content, inserted_at')
+        .eq('author_id', profileData.id)
         .eq('slug', slug)
         .eq('is_published', true)
         .eq('visibility', 'public')
-        .single()
+        .maybeSingle()
 
-    if (!post) {
-        return { title: 'Yazı Bulunamadı' }
+      setProfile(profileData)
+      setPost(postData)
+      setLoading(false)
     }
 
-    // Create description from content (strip HTML, first 160 chars)
-    const description = post.content
-        .replace(/<[^>]*>/g, '')
-        .slice(0, 160)
-        .trim() + '...'
+    fetchData()
+  }, [hasConnection, username, slug])
 
-    return {
-        title: `${post.title} — @${username}`,
-        description,
-        openGraph: {
-            title: post.title,
-            description,
-            type: 'article',
-            authors: [`@${username}`],
-        },
-    }
-}
-
-export default async function PostPage({ params }: PageProps) {
-    const { username, slug } = await params
-
-    // Get profile
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('username', username)
-        .single()
-
-    if (!profile) {
-        notFound()
-    }
-
-    // Get post
-    const { data: post } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('author_id', profile.id)
-        .eq('slug', slug)
-        .eq('is_published', true)
-        .eq('visibility', 'public')
-        .single()
-
-    if (!post) {
-        notFound()
-    }
-
+  if (!hasConnection) {
     return (
-        <div className="min-h-screen flex flex-col">
-            {/* Header */}
-            <header className="border-b border-ink px-6 py-4 flex items-center justify-between">
-                <Link
-                    href={`/${username}`}
-                    className="flex items-center gap-2 text-sm hover:underline"
-                >
-                    <ArrowLeft size={14} />
-                    @{username}
-                </Link>
-                <Link href="/" className="text-lg font-semibold tracking-tight hover:underline">
-                    FRANZKAFKA.XYZ
-                </Link>
-            </header>
-
-            {/* Article */}
-            <article className="flex-1 px-6 py-8">
-                <div className="max-w-2xl mx-auto">
-                    {/* Title */}
-                    <h1 className="text-3xl font-bold mb-4">{post.title}</h1>
-
-                    {/* Meta */}
-                    <div className="flex items-center gap-4 text-sm text-ink-light mb-8 pb-8 border-b border-ink">
-                        <Link href={`/${username}`} className="hover:underline">
-                            @{profile.username}
-                        </Link>
-                        <span>•</span>
-                        <time dateTime={post.inserted_at}>
-                            {new Date(post.inserted_at).toLocaleDateString('tr-TR', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                            })}
-                        </time>
-                    </div>
-
-                    {/* Content */}
-                    <div
-                        className="prose prose-sm max-w-none"
-                        dangerouslySetInnerHTML={{ __html: post.content }}
-                    />
-                </div>
-            </article>
-
-            {/* Footer */}
-            <footer className="border-t border-ink px-6 py-4 text-xs text-ink-light">
-                <div className="max-w-2xl mx-auto flex justify-between">
-                    <Link href={`/${username}`} className="hover:underline">
-                        ← @{username} yazıları
-                    </Link>
-                    <span>FranzKafka.xyz</span>
-                </div>
-            </footer>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <p className="text-sm text-ink-light">
+          Bu yaziyi okumak icin once <Link href="/baglan" className="underline hover:no-underline">Supabase bagla</Link>.
+        </p>
+      </div>
     )
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-ink-light text-sm">Loading...</p>
+      </div>
+    )
+  }
+
+  if (!profile || !post) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-ink-light text-sm">Yazi bulunamadi.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <header className="border-b border-ink px-6 py-4 flex items-center justify-between">
+        <Link href={`/${username}`} className="flex items-center gap-2 text-sm hover:underline">
+          <ArrowLeft size={14} />
+          @{username}
+        </Link>
+        <Link href="/" className="text-lg font-semibold tracking-tight hover:underline">
+          FRANZKAFKA.XYZ
+        </Link>
+      </header>
+
+      <article className="flex-1 px-6 py-8">
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-3xl font-bold mb-4">{post.title}</h1>
+
+          <div className="flex items-center gap-4 text-sm text-ink-light mb-8 pb-8 border-b border-ink">
+            <Link href={`/${username}`} className="hover:underline">
+              @{profile.username}
+            </Link>
+            <span>•</span>
+            <time dateTime={post.inserted_at}>
+              {new Date(post.inserted_at).toLocaleDateString('tr-TR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </time>
+          </div>
+
+          <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: post.content }} />
+        </div>
+      </article>
+    </div>
+  )
 }
+

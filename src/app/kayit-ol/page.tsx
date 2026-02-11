@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/components/auth'
 import { Button, Input } from '@/components/ui'
@@ -12,10 +13,15 @@ export default function RegisterPage() {
     const [error, setError] = useState('')
     const [success, setSuccess] = useState(false)
     const [loading, setLoading] = useState(false)
-    const { signUp } = useAuth()
+    const { signUp, hasConnection } = useAuth()
+    const router = useRouter()
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (!hasConnection) {
+            router.push('/baglan')
+            return
+        }
         setError('')
 
         if (password !== confirmPassword) {
@@ -69,6 +75,15 @@ export default function RegisterPage() {
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="border border-ink p-6 bg-paper">
                     <div className="space-y-4">
+                        {!hasConnection && (
+                            <div className="p-3 border border-ink bg-paper-dark text-xs">
+                                Once Supabase baglamalisin.{' '}
+                                <Link href="/baglan" className="underline hover:no-underline">
+                                    /baglan
+                                </Link>
+                            </div>
+                        )}
+
                         <Input
                             label="Email (E-posta)"
                             type="email"
@@ -106,7 +121,7 @@ export default function RegisterPage() {
                             type="submit"
                             variant="primary"
                             className="w-full"
-                            disabled={loading}
+                            disabled={loading || !hasConnection}
                         >
                             {loading ? 'Signing up... / Kayit' : 'Sign up / Kayit ol'}
                         </Button>

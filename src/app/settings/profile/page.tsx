@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save } from 'lucide-react'
 import { ProtectedRoute, useAuth } from '@/components/auth'
 import { Button, Input } from '@/components/ui'
-import { supabaseBrowser } from '@/lib/supabase-browser'
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser'
 import { normalizeUsername, usernameFromEmail } from '@/lib/username'
 import type { PostgrestError } from '@supabase/supabase-js'
 
@@ -47,7 +47,8 @@ function ProfileSettingsContent() {
     }
 
     setSaving(true)
-    const { error: updateError } = await supabaseBrowser
+    const supabase = getSupabaseBrowserClient()
+    const { error: updateError } = await supabase
       .from('profiles')
       .update({
         username: u,

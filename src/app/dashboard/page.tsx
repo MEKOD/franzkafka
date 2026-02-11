@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Plus, LogOut, Eye, Trash2, User as UserIcon, ExternalLink, Share2, X, Download, Copy } from 'lucide-react'
-import { supabaseBrowser } from '@/lib/supabase-browser'
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui'
 import { ProtectedRoute, useAuth } from '@/components/auth'
 import { ensureProfile } from '@/lib/ensureProfile'
@@ -36,8 +36,9 @@ function DashboardContent() {
     useEffect(() => {
         async function fetchPosts() {
             if (!user) return
+            const supabase = getSupabaseBrowserClient()
 
-            const { data, error } = await supabaseBrowser
+            const { data, error } = await supabase
                 .from('posts')
                 .select('*')
                 .eq('author_id', user.id)
@@ -58,14 +59,15 @@ function DashboardContent() {
 
     const handleNewPost = async () => {
         if (!user) return
+        const supabase = getSupabaseBrowserClient()
 
-        const p = await ensureProfile(user)
+        const p = await ensureProfile(user, supabase)
         if (!p) {
             console.error('Could not ensure profile')
             return
         }
 
-        const { data, error } = await supabaseBrowser
+        const { data, error } = await supabase
             .from('posts')
             .insert({
                 author_id: user.id,
@@ -95,8 +97,9 @@ function DashboardContent() {
 
     const handleDelete = async (postId: number) => {
         if (!confirm('Delete this post? / Bu yazi silinsin mi?')) return
+        const supabase = getSupabaseBrowserClient()
 
-        const { error } = await supabaseBrowser
+        const { error } = await supabase
             .from('posts')
             .delete()
             .eq('id', postId)
@@ -138,7 +141,8 @@ function DashboardContent() {
         if (!confirm(`Mark ${legacyDrafts.length} legacy drafts as published (Private)?`)) return
 
         setFixingLegacy(true)
-        const { error } = await supabaseBrowser
+        const supabase = getSupabaseBrowserClient()
+        const { error } = await supabase
             .from('posts')
             .update({ is_published: true, visibility: 'private' })
             .eq('author_id', user.id)

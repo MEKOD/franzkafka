@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Save, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import { supabaseBrowser } from '@/lib/supabase-browser'
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui'
 import { TipTapEditor } from '@/components/editor'
 import { AuthModal, useAuth } from '@/components/auth'
@@ -29,7 +29,7 @@ function generateSlug(title: string): string {
 
 export default function WritePage() {
     const router = useRouter()
-    const { user } = useAuth()
+    const { user, hasConnection } = useAuth()
     const [title, setTitle] = useState('')
     const [content, setContent] = useState('')
     const [showAuthModal, setShowAuthModal] = useState(false)
@@ -69,15 +69,20 @@ export default function WritePage() {
     const minutes = readingTimeMinutesFromWords(words)
 
     const savePost = useCallback(async () => {
+        if (!hasConnection) {
+            router.push('/baglan')
+            return
+        }
         if (!user) {
             setShowAuthModal(true)
             return
         }
 
+        const supabase = getSupabaseBrowserClient()
         setSaving(true)
 
         // First ensure profile exists
-        const { data: existingProfile, error: profileError } = await supabaseBrowser
+        const { data: existingProfile, error: profileError } = await supabase
             .from('profiles')
             .select('id, username')
             .eq('id', user.id)
@@ -91,7 +96,7 @@ export default function WritePage() {
 
         if (!existingProfile) {
             const username = user.email?.split('@')[0] || `user-${Date.now()}`
-            await supabaseBrowser
+            await supabase
                 .from('profiles')
                 .insert({
                     id: user.id,
@@ -99,7 +104,7 @@ export default function WritePage() {
                 })
         }
 
-        const { error } = await supabaseBrowser
+        const { error } = await supabase
             .from('posts')
             .insert({
                 author_id: user.id,
@@ -119,7 +124,7 @@ export default function WritePage() {
 
         localStorage.removeItem(DRAFT_KEY)
         router.push('/dashboard')
-    }, [user, title, content, publishVisibility, router])
+    }, [user, hasConnection, title, content, publishVisibility, router])
 
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent) => {

@@ -11,11 +11,15 @@ export default function LoginPage() {
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
-    const { signIn } = useAuth()
+    const { signIn, hasConnection } = useAuth()
     const router = useRouter()
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (!hasConnection) {
+            router.push('/baglan')
+            return
+        }
         setError('')
         setLoading(true)
 
@@ -40,6 +44,15 @@ export default function LoginPage() {
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="border border-ink p-6 bg-paper">
                     <div className="space-y-4">
+                        {!hasConnection && (
+                            <div className="p-3 border border-ink bg-paper-dark text-xs">
+                                Once Supabase baglamalisin.{' '}
+                                <Link href="/baglan" className="underline hover:no-underline">
+                                    /baglan
+                                </Link>
+                            </div>
+                        )}
+
                         <Input
                             label="Email (E-posta)"
                             type="email"
@@ -68,7 +81,7 @@ export default function LoginPage() {
                             type="submit"
                             variant="primary"
                             className="w-full"
-                            disabled={loading}
+                            disabled={loading || !hasConnection}
                         >
                             {loading ? 'Signing in... / Giris' : 'Sign in / Giris'}
                         </Button>

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, Save, Trash2, Printer } from 'lucide-react'
 import Link from 'next/link'
-import { supabaseBrowser } from '@/lib/supabase-browser'
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui'
 import { TipTapEditor } from '@/components/editor'
 import { ProtectedRoute, useAuth } from '@/components/auth'
@@ -44,7 +44,8 @@ function EditContent() {
 
     useEffect(() => {
         async function fetchPost() {
-            const { data, error } = await supabaseBrowser
+            const supabase = getSupabaseBrowserClient()
+            const { data, error } = await supabase
                 .from('posts')
                 .select('*')
                 .eq('id', postId)
@@ -78,6 +79,7 @@ function EditContent() {
         if (!post) return
 
         setSaving(true)
+        const supabase = getSupabaseBrowserClient()
         const updates: Partial<Post> = {
             title: title || 'Başlıksız',
             content,
@@ -87,7 +89,7 @@ function EditContent() {
             is_published: true,
         }
 
-        const { error } = await supabaseBrowser
+        const { error } = await supabase
             .from('posts')
             .update(updates)
             .eq('id', post.id)
@@ -102,7 +104,8 @@ function EditContent() {
         if (!post) return
         if (!confirm('Delete this post? / Bu yazi silinsin mi?')) return
 
-        const { error } = await supabaseBrowser
+        const supabase = getSupabaseBrowserClient()
+        const { error } = await supabase
             .from('posts')
             .delete()
             .eq('id', post.id)

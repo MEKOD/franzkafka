@@ -1,10 +1,9 @@
-import type { PostgrestError, User } from '@supabase/supabase-js'
+import type { PostgrestError, SupabaseClient, User } from '@supabase/supabase-js'
 import type { Profile } from '@/lib/types'
-import { supabaseBrowser } from '@/lib/supabase-browser'
 import { usernameFromEmail } from '@/lib/username'
 
-export async function ensureProfile(user: User): Promise<Profile | null> {
-  const { data: existing, error: selectError } = await supabaseBrowser
+export async function ensureProfile(user: User, supabase: SupabaseClient): Promise<Profile | null> {
+  const { data: existing, error: selectError } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
@@ -21,13 +20,13 @@ export async function ensureProfile(user: User): Promise<Profile | null> {
   const candidates = [base, `${base}-${Math.random().toString(36).slice(2, 6)}`]
 
   for (const username of candidates) {
-    const { error: insertError } = await supabaseBrowser.from('profiles').insert({
+    const { error: insertError } = await supabase.from('profiles').insert({
       id: user.id,
       username,
     })
 
     if (!insertError) {
-      const { data: created } = await supabaseBrowser
+      const { data: created } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
