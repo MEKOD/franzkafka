@@ -108,7 +108,7 @@ export default function ConnectSupabasePage() {
               Protocol: Bring Your Own Database (BYOD)
             </p>
             <p className="text-xs text-ink-light mt-2">
-              Default mode uses deployed env project. Custom mode is optional for bring-your-own Supabase.
+              Configure your own Supabase project here. We transparently show every setup step below.
             </p>
           </div>
 
@@ -128,6 +128,17 @@ export default function ConnectSupabasePage() {
           )}
 
           <form onSubmit={handleSave} className="space-y-6">
+            <div className="border border-ink p-4 text-xs space-y-2 bg-paper-dark">
+              <p className="font-semibold uppercase">Setup Guide</p>
+              <p>1. Create a Supabase project and copy Project URL + anon key.</p>
+              <p>2. Paste values below and click <span className="font-semibold">TEST CONNECTION</span>.</p>
+              <p>3. Open Supabase SQL Editor and run the schema script.</p>
+              <p>4. Click <span className="font-semibold">INITIALIZE SYSTEM</span>, then go to Sign up / Sign in.</p>
+              <p className="text-stamp-red font-semibold">
+                Note: For quick testing, disable email confirmation in Supabase Auth settings.
+              </p>
+            </div>
+
             <div className="space-y-4">
               <Input
                 label="SUPABASE PROJECT URL"
@@ -145,6 +156,25 @@ export default function ConnectSupabasePage() {
                 required
                 className="font-mono"
               />
+            </div>
+
+            <div className="border border-ink p-4 bg-gray-50 space-y-3">
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold underline text-sm">SQL SCHEMA</h3>
+                <button
+                  type="button"
+                  onClick={copySQL}
+                  className="text-xs bg-black text-white px-2 py-1 hover:bg-gray-800"
+                >
+                  COPY SQL
+                </button>
+              </div>
+              <p className="text-xs">
+                Paste this into Supabase SQL Editor and run it once.
+              </p>
+              <pre className="text-[10px] bg-white p-2 border border-gray-300 overflow-x-auto h-40">
+                {REQUIRED_SQL}
+              </pre>
             </div>
 
             {feedback && (

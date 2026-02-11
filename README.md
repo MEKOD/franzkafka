@@ -1,42 +1,7 @@
-# Ledger (FranzKafka.xyz)
-
-Minimal blog platform with a "bring your own Supabase" model.
-
-## How it works
-
-- App does not require a central database.
-- Each user connects their own Supabase project from `/baglan`.
-- Auth, profiles, and posts are stored in that user's Supabase project.
-
-## Setup
-
-1. Install deps:
-
-```bash
+LEDGER"I am a cage, in search of a bird." — Franz KafkaLedger is a minimalist blogging platform designed for focus. It strips away the noise, the metrics, and the distractions.It features a Hybrid Database Architecture:Default Mode: Sign up and write immediately using our hosted database.Sovereign Mode: Connect your own Supabase project. We become just the UI; you own the data.Live Demo · Report Bug⚡ The ArchitectureLedger acts as a chameleon. It works out-of-the-box, but allows users to "eject" from our infrastructure anytime.ModeDatabaseData OwnershipSetup RequiredDefaultHosted by LedgerSharedNone (Just Sign Up)SovereignYour Personal Supabase100% YoursConnect via /baglanNote: In Sovereign Mode, your API keys are stored only in your browser's Local Storage. They are never sent to our backend logs.🚀 Getting StartedOption A: Just Write (User)Go to the Live App.Click Sign Up.Start writing.Option B: Bring Your Own Database (Power User)Go to the Live App.Navigate to /baglan (Connect).Enter your Supabase Project URL and Anon Key.Run the SQL script provided in the UI (or schema.sql) in your Supabase SQL Editor.Click Test & Save.The app now talks directly to your database.🛠️ Installation (For Developers)To run your own instance of Ledger locally:Clone the repo:Bashgit clone https://github.com/yourusername/ledger.git
+cd ledger
 npm install
-```
-
-2. Run dev server:
-
-```bash
-npm run dev
-```
-
-3. Open `http://localhost:3000/baglan`
-
-4. Enter:
-- Supabase Project URL
-- Supabase anon key
-
-5. In your Supabase dashboard, run `schema.sql` in SQL Editor.
-
-6. Return to app and use Test/Save on `/baglan`, then sign up/sign in.
-
-## Notes
-
-- `anon key` is public by design; RLS policies in `schema.sql` enforce access rules.
-- If you still want a fixed single-project setup, you can set:
-  - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-  The app will use env config as fallback when no local connection is saved.
-
+Configure Default Database:Create a .env.local file with your own Supabase project (this will be the "Default" for your users).Kod snippet'iNEXT_PUBLIC_SUPABASE_URL=your_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+Run Development Server:Bashnpm run dev
+Database Schema:Ensure your Supabase project has the correct tables. Run the contents of public/schema.sql in your Supabase SQL Editor.🛡️ Security & PrivacyRow Level Security (RLS): Whether using the default DB or your own, access is strictly controlled by RLS policies. Users can only edit their own data.Client-Side Switching: The switch between Default and Sovereign mode happens entirely in the browser (Runtime Config).☕ SupportIf you like the "Bureaucratic Minimalism" aesthetic:[ Bribe the Developer ]Licensed under MIT.
