@@ -68,6 +68,15 @@ Run `schema.sql` in Supabase SQL Editor for any project you want Ledger to use.
 - App: `https://franzkafka.xyz`
 - Repo: `https://github.com/MEKOD/franzkafka`
 
+## Community files
+
+- `LICENSE`
+- `CONTRIBUTING.md`
+- `CODE_OF_CONDUCT.md`
+- `SECURITY.md`
+- `.github/ISSUE_TEMPLATE/*`
+- `.github/PULL_REQUEST_TEMPLATE.md`
+
 ## License
 
 MIT
