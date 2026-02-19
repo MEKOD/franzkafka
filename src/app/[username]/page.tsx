@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { Share2 } from 'lucide-react'
 import { getSupabaseBrowserClient } from '@/lib/supabase-browser'
+import { ShareCardModal } from '@/components/ShareCardModal'
 import { useAuth } from '@/components/auth'
 
 interface ProfileView {
@@ -25,6 +27,7 @@ export default function UserProfilePage() {
   const username = params.username
   const [profile, setProfile] = useState<ProfileView | null>(null)
   const [posts, setPosts] = useState<PublicPost[]>([])
+  const [sharePost, setSharePost] = useState<PublicPost | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -113,20 +116,31 @@ export default function UserProfilePage() {
           {posts.length > 0 ? (
             <div className="space-y-4">
               {posts.map((post) => (
-                <Link
+                <div
                   key={post.id}
-                  href={`/${username}/${post.slug}`}
-                  className="block border border-ink p-4 hover:bg-paper-dark"
+                  className="flex items-center justify-between border border-ink p-4 hover:bg-paper-dark group"
                 >
-                  <h3 className="font-semibold mb-1">{post.title}</h3>
-                  <p className="text-xs text-ink-light">
-                    {new Date(post.inserted_at).toLocaleDateString('tr-TR', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </p>
-                </Link>
+                  <Link
+                    href={`/${username}/${post.slug}`}
+                    className="flex-1 min-w-0"
+                  >
+                    <h3 className="font-semibold mb-1 truncate">{post.title}</h3>
+                    <p className="text-xs text-ink-light">
+                      {new Date(post.inserted_at).toLocaleDateString('tr-TR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </p>
+                  </Link>
+                  <button
+                    onClick={() => setSharePost(post)}
+                    className="p-2 ml-4 text-ink-light hover:text-ink hover:bg-paper border border-transparent hover:border-ink transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    title="Share"
+                  >
+                    <Share2 size={16} />
+                  </button>
+                </div>
               ))}
             </div>
           ) : (
@@ -134,6 +148,14 @@ export default function UserProfilePage() {
           )}
         </div>
       </main>
+
+      {sharePost && profile && (
+        <ShareCardModal
+          post={sharePost}
+          username={profile.username || ''}
+          onClose={() => setSharePost(null)}
+        />
+      )}
     </div>
   )
 }

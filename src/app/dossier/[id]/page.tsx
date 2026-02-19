@@ -4,12 +4,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { getSupabaseBrowserClient } from '@/lib/supabase-browser'
-import { ProtectedRoute, useAuth } from '@/components/auth'
+import { useAuth } from '@/components/auth'
 import { Button } from '@/components/ui'
 import type { Post, Visibility } from '@/lib/types'
 import { stripHtml, countWords, readingTimeMinutesFromWords } from '@/lib/text'
 
-function DossierContent() {
+export default function DossierPage() {
   const params = useParams()
   const router = useRouter()
   const search = useSearchParams()
@@ -29,12 +29,16 @@ function DossierContent() {
         .single()
 
       if (error || !data) {
-        router.push('/dashboard')
+        router.push('/')
         return
       }
 
-      if (data.author_id !== user?.id) {
-        router.push('/dashboard')
+      // Allow if public OR if user is author
+      const isPublic = data.visibility === 'public'
+      const isAuthor = user?.id === data.author_id
+
+      if (!isPublic && !isAuthor) {
+        router.push('/')
         return
       }
 
@@ -42,7 +46,7 @@ function DossierContent() {
       setLoading(false)
     }
 
-    if (user) fetchPost()
+    fetchPost()
   }, [postId, router, user])
 
   const plain = useMemo(() => stripHtml(post?.content || ''), [post?.content])
@@ -67,11 +71,16 @@ function DossierContent() {
     )
   }
 
+  const isAuthor = user?.id === post.author_id
+
   return (
     <div className="min-h-screen flex flex-col dossier-root">
       <header className="border-b border-ink px-6 py-4 flex items-center justify-between no-print">
-        <Link href={`/duzenle/${post.id}`} className="text-sm hover:underline">
-          ← Back to editor
+        <Link
+          href={isAuthor ? `/duzenle/${post.id}` : `/${profile?.username || post.author_id}/${post.slug}`}
+          className="text-sm hover:underline"
+        >
+          ← {isAuthor ? 'Back to editor' : 'Back to post'}
         </Link>
         <div className="flex items-center gap-2">
           <Button onClick={() => window.print()} variant="primary">
@@ -126,13 +135,5 @@ function DossierContent() {
         </div>
       </main>
     </div>
-  )
-}
-
-export default function DossierPage() {
-  return (
-    <ProtectedRoute>
-      <DossierContent />
-    </ProtectedRoute>
   )
 }

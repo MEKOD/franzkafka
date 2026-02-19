@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { X, Copy, Download, Share2 } from 'lucide-react'
+import { X, Copy, Download, Share2, Printer } from 'lucide-react'
+import Link from 'next/link'
 import { Button } from '@/components/ui'
 
 interface Post {
@@ -132,6 +133,12 @@ export function ShareCardModal({ post, username, onClose }: ShareCardModalProps)
                                     Share
                                 </Button>
                             )}
+                            <Link href={`/dossier/${post.id}?print=1`} target="_blank">
+                                <Button>
+                                    <Printer size={14} />
+                                    PDF / Print
+                                </Button>
+                            </Link>
                         </div>
 
                         <div className="text-xs text-ink-light">
