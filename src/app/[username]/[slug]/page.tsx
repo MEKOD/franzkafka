@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Share2 } from 'lucide-react'
+import { ShareCardModal } from '@/components/ShareCardModal'
 import { useAuth } from '@/components/auth'
 import { getSupabaseBrowserClient } from '@/lib/supabase-browser'
 
@@ -17,6 +18,7 @@ interface PublicPost {
   title: string
   content: string
   inserted_at: string
+  slug: string
 }
 
 export default function PostPage() {
@@ -24,6 +26,7 @@ export default function PostPage() {
   const { hasConnection } = useAuth()
   const [profile, setProfile] = useState<PublicProfile | null>(null)
   const [post, setPost] = useState<PublicPost | null>(null)
+  const [sharePost, setSharePost] = useState<PublicPost | null>(null)
   const [loading, setLoading] = useState(true)
 
   const username = params.username
@@ -52,7 +55,7 @@ export default function PostPage() {
 
       const { data: postData } = await supabase
         .from('posts')
-        .select('id, title, content, inserted_at')
+        .select('id, title, content, inserted_at, slug')
         .eq('author_id', profileData.id)
         .eq('slug', slug)
         .eq('is_published', true)
@@ -121,11 +124,27 @@ export default function PostPage() {
                 day: 'numeric',
               })}
             </time>
+            <span>•</span>
+            <button
+              onClick={() => setSharePost(post)}
+              className="hover:underline flex items-center gap-1"
+            >
+              <Share2 size={14} />
+              Share
+            </button>
           </div>
 
           <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: post.content }} />
         </div>
       </article>
+
+      {sharePost && profile && (
+        <ShareCardModal
+          post={sharePost}
+          username={profile.username || ''}
+          onClose={() => setSharePost(null)}
+        />
+      )}
     </div>
   )
 }
